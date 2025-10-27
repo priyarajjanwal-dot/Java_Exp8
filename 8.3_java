@@ -1,0 +1,82 @@
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet("/AttendancePortal")
+public class AttendancePortal extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    // Database credentials
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/student_portal";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "your_password";
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Display the form
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        out.println("<html><head><title>Student Attendance Portal</title></head><body>");
+        out.println("<h2>Student Attendance Form</h2>");
+        out.println("<form method='post'>");
+        out.println("Student ID: <input type='text' name='studentId' required><br><br>");
+        out.println("Date: <input type='date' name='date' required><br><br>");
+        out.println("Status: <select name='status' required>");
+        out.println("<option value='Present'>Present</option>");
+        out.println("<option value='Absent'>Absent</option>");
+        out.println("</select><br><br>");
+        out.println("<input type='submit' value='Submit Attendance'>");
+        out.println("</form>");
+        out.println("</body></html>");
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String studentId = request.getParameter("studentId");
+        String date = request.getParameter("date");
+        String status = request.getParameter("status");
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        try {
+            // Load JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Connect to database
+            Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            // Insert attendance record
+            String sql = "INSERT INTO Attendance (student_id, attendance_date, status) VALUES (?, ?, ?)";
+            PreparedStatement pst = con.prepareStatement(sql);
+            pst.setString(1, studentId);
+            pst.setString(2, date);
+            pst.setString(3, status);
+
+            int rowCount = pst.executeUpdate();
+            if (rowCount > 0) {
+                out.println("<h3>Attendance recorded successfully!</h3>");
+            } else {
+                out.println("<h3>Error recording attendance. Please try again.</h3>");
+            }
+
+            pst.close();
+            con.close();
+
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+            out.println("<h3>Error: " + e.getMessage() + "</h3>");
+        }
+
+        out.println("<br><a href='AttendancePortal'>Back to Form</a>");
+    }
+}
